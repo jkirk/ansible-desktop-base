@@ -1,0 +1,45 @@
+---
+# NOTE: Ensure important packages we always want to have are present
+# and deploy basic grml-config for user root
+
+- name: Check for Debian/stretch
+  debug:
+    msg: "Debian release: {{ ansible_distribution_release }}"
+# failed_when: ansible_lsb.codename != "stretch"
+- name: Ensure base Debian package selection is installed
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - apt-dater-host
+    - apt-transport-https
+    - curl
+    - etckeeper
+    - git
+    - iotop
+    - man-db
+    - ldnsutils
+    - parted
+    - screen
+    - socat
+    - tmux
+    - vim
+    - zsh
+- name: Set vim as default editor (update-alternative)
+  alternatives:
+    name: editor
+    path: /usr/bin/vim.basic
+- name: Check for systemd-sysv
+  shell: 'dpkg -l systemd-sysv | grep -e "^ii" -q'
+  register: systemd_sysv_installed
+  ignore_errors: yes
+  changed_when: False
+  check_mode: no
+- name: Install libpam-systemd on Debian/jessie and later systems
+  apt: name=libpam-systemd state=present
+  when: systemd_sysv_installed.rc == 0
+- include_tasks: grml-config.yml username=root
+
+# Two-space indents feel comfortable to me, but do whatever you like.
+# vim:ff=unix ts=2 sw=2 ai expandtab
+#
